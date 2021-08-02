@@ -11,7 +11,7 @@
 
 #define FAIL -1
 
-int connect_establish(const char *hostname, int port) {
+int OpenConnection(const char *hostname, int port) {
     int sd;
     struct hostent *host;
     struct sockaddr_in addr;
@@ -73,25 +73,24 @@ void ShowCerts(SSL* ssl) {
 void handleConn(SSL *ssl){
     char buf[1024], req[1024];
     int bytes = 0;
-    int sd = SSL_get_fd(ssl), a=1;
+    char c;
     while(1){
-        printf("Enter some thing for server:");
+        printf("Enter some thing for server: \n");
         fgets(req, 1024, stdin);
+        printf("--> %s\n", req);
         SSL_write(ssl, req, strlen(req));
-        listen(sd, 1);
         bytes = SSL_read(ssl, buf, sizeof(buf));
         if(bytes > 0){
-            buf[bytes-1] = 0;
-            printf("Server msg received:--> %s\n", buf);
-            a = (strcmp(buf, "quit") == 0)?0:1;
+            buf[bytes] = 0;
+            printf("Server msg received: %s\n", buf);
         }else{
             ERR_print_errors_fp(stderr);
-            a = 0;
         }
-        if(1-a)
+        printf("Do you want to continue: y/n: ");
+        scanf("%c", &c);
+        if(c == 'n' || c == 'N')
 	    break;
     }
-    SSL_write(ssl, "quit\n", (int)strlen("quit\n"));
 }
 
 
@@ -99,17 +98,20 @@ int main(int count, char *strings[]) {
     SSL_CTX *ctx;
     int server;
     SSL *ssl;
+//    char buf[1024];
+//    char acClientRequest[1024];
+//    int bytes;
     char *hostname, *portnum;
     if ( count != 3 )
     {
-        printf("Need to specify the hostname and port number\n");
+        printf("usage: %s <hostname> <portnum>\n", strings[0]);
         exit(0);
     }
     SSL_library_init();
     hostname=strings[1];
     portnum=strings[2];
     ctx = InitCTX();
-    server = connect_establish(hostname, atoi(portnum));
+    server = OpenConnection(hostname, atoi(portnum));
     ssl = SSL_new(ctx); /* create new SSL connection state */
     SSL_set_fd(ssl, server); /* attach the socket descriptor */
     if ( SSL_connect(ssl) == FAIL ) /* perform the connection */
@@ -118,6 +120,10 @@ int main(int count, char *strings[]) {
     {
         printf("\n\nConnected with %s encryption\n", SSL_get_cipher(ssl));
         ShowCerts(ssl); /* get any certs */
+        //SSL_write(ssl,acClientRequest, strlen(acClientRequest)); /* encrypt & send message */
+        //bytes = SSL_read(ssl, buf, sizeof(buf)); /* get reply & decrypt */
+        //buf[bytes] = 0;
+        //printf("Received: \"%s\"\n", buf);
         handleConn(ssl);
         SSL_free(ssl); /* release connection state */
     }

@@ -111,12 +111,14 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
          while(1){
             bytes = SSL_read(ssl, buf, sizeof(buf));
             if(bytes > 0){
-                buf[bytes] = 0;
+                buf[bytes-1] = 0;
                 printf("Client msg received : %s\n", buf);
                 //sprintf(reply, "You send me: %s", buf);
                 a = (strcmp(buf, "quit")==0)?0:1;
+//                printf("%d, %c bytes\n", bytes, buf[bytes-2]);
                 if(1-a){
-                    SSL_write(ssl, "quit", strlen("quit"));
+                    SSL_write(ssl, "quit\n", (int)strlen("quit\n"));
+//		    printf("encountered quit\n");
                     break;
                 }else{
                 printf("Msg for client: \n");
@@ -127,9 +129,11 @@ void Servlet(SSL* ssl) /* Serve the connection -- threadable */
             }else{
                 ERR_print_errors_fp(stderr);
             }
+//	    printf("here again\n");
         }
 
     }
+//    printf("out with break");
     SSL_free(ssl);         /* release SSL state */
     close(sd);          /* close connection */
 }
